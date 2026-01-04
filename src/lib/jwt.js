@@ -1,0 +1,43 @@
+import { SignJWT, jwtVerify } from "jose";
+
+const accessSecret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
+const refreshSecret = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET);
+const alg = "HS256";
+
+
+// Génère un Access Token
+export async function signAccessToken(payload) {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setExpirationTime("15m")
+    .sign(accessSecret);
+}
+
+// Génère un Refresh Token
+export async function signRefreshToken(payload) {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setExpirationTime("7d")
+    .sign(refreshSecret);
+}
+
+// Vérifie un Access Token
+export async function verifyAccessToken(token) {
+  const { payload } = await jwtVerify(token, accessSecret);
+  return payload;
+}
+
+// Vérifie un Refresh Token
+export async function verifyRefreshToken(token) {
+  const { payload } = await jwtVerify(token, refreshSecret);
+  return payload;
+}
+
+// Décode un token sans le vérifier (pour récupérer l'expiration)
+export function decodeToken(token) {
+  const [, payloadBase64] = token.split(".");
+  const payload = JSON.parse(Buffer.from(payloadBase64, "base64").toString());
+  return payload;
+}
