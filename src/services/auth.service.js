@@ -43,7 +43,7 @@ export class AuthService {
     });
 
     // Envoyer l'email de vérification
-    // await sendVerificationEmail(user.email, verificationToken);
+    await sendVerificationEmail(user.email, verificationToken);
 
     // Enregistrer la connexion dans l'historique
     await prisma.loginHistory.create({
@@ -86,15 +86,17 @@ export class AuthService {
       ? await verifyPassword(user.password, password)
       : false;
 
-    // Enregistrer la tentative dans l'historique
-    await prisma.loginHistory.create({
-      data: {
-        userId: user?.id || null,
-        success: isPasswordValid,
-        ipAddress,
-        userAgent,
-      },
-    });
+    // Enregistrer la tentative dans l'historique SEULEMENT si l'utilisateur existe
+    if (user) {
+      await prisma.loginHistory.create({
+        data: {
+          userId: user.id,
+          success: isPasswordValid,
+          ipAddress,
+          userAgent,
+        },
+      });
+    }
 
     if (!isPasswordValid) {
       throw new UnauthorizedException("Email ou mot de passe incorrect");
