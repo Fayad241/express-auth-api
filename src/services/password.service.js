@@ -36,7 +36,7 @@ export class PasswordService {
     });
 
     // Envoyer l'email
-    // await sendPasswordResetEmail(user.email, token);
+    await sendPasswordResetEmail(user.email, token);
 
     return { success: true };
   }

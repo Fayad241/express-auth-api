@@ -43,7 +43,7 @@ export class AuthService {
     });
 
     // Envoyer l'email de vérification
-    // await sendVerificationEmail(user.email, verificationToken);
+    await sendVerificationEmail(user.email, verificationToken);
 
     // Enregistrer la connexion dans l'historique
     await prisma.loginHistory.create({
