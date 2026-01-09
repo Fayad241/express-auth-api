@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import passport from "passport";
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -12,6 +13,7 @@ import { errorHandler } from "#middlewares/error-handler";
 import { notFoundHandler } from "#middlewares/not-found";
 import { apiLimiter } from "#lib/rate-limiter";
 import routes from "#routes/index";
+import "#lib/passport";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,6 +27,9 @@ app.use(httpLogger);
 
 // Parser JSON
 app.use(express.json());
+
+// Initialiser Passport
+app.use(passport.initialize());
 
 // Rate limiting global
 app.use(apiLimiter);
