@@ -1,77 +1,58 @@
-import prisma from "#lib/prisma";
+import { SessionService } from "#services/session.service";
+import { SessionDto } from "#dto/session.dto";
+import { BadRequestException } from "#lib/exceptions";
 
 export class SessionController {
-
-  // GET /sessions
+  /* GET /sessions
+  Lister toutes les sessions actives */
   static async getSessions(req, res) {
-    const sessions = await prisma.refreshToken.findMany({
-      where: {
-        userId: req.user.id,
-        revokedAt: null,
-        expiresAt: { gt: new Date() }
-      },
-      select: {
-        id: true,
-        userAgent: true,
-        ipAddress: true,
-        createdAt: true,
-        expiresAt: true
-      }
-    });
+    // Récupérer le refresh token actuel depuis le body ou header
+    const currentRefreshToken = req.body.refreshToken || req.query.refreshToken;
 
-    res.json({
-      success: true,
-      sessions
-    });
-  }
-
-  // DELETE /sessions/:id
-  static async revokeSession(req, res) {
-    const { id } = req.params;
-
-    const session = await prisma.refreshToken.findFirst({
-      where: {
-        id,
-        userId: req.user.id
-      }
-    });
-
-    if (!session) {
-      return res.status(404).json({
-        success: false,
-        error: "Session introuvable"
-      });
+    if (!currentRefreshToken) {
+      throw new BadRequestException("Refresh token requis pour identifier la session actuelle");
     }
 
-    await prisma.refreshToken.update({
-      where: { id },
-      data: { revokedAt: new Date() }
-    });
+    const sessions = await SessionService.getActiveSessions(req.user.id);
 
     res.json({
       success: true,
-      message: "Session révoquée"
+      sessions: SessionDto.transform(sessions, currentRefreshToken),
     });
   }
 
-  // DELETE /sessions
-  static async revokeOtherSessions(req, res) {
-    const currentToken = req.body.refreshToken;
+  /* DELETE /sessions/:id
+  Révoquer une session spécifique */
+  static async revokeSession(req, res) {
+    const { id } = req.params;
+    const currentRefreshToken = req.body.refreshToken;
 
-    await prisma.refreshToken.updateMany({
-      where: {
-        userId: req.user.id,
-        token: { not: currentToken },
-        revokedAt: null
-      },
-      data: {
-        revokedAt: new Date()
-      }
-    });
+    if (!currentRefreshToken) {
+      throw new BadRequestException("Refresh token requis");
+    }
+
+    await SessionService.revokeSession(req.user.id, id, currentRefreshToken);
 
     res.json({
       success: true,
-      message: "Toutes les autres sessions ont été révoquées"
+      message: "Session révoquée avec succès",
+    });
+  }
+
+  /* DELETE /sessions/others
+  Révoquer toutes les autres sessions */
+  static async revokeOtherSessions(req, res) {
+    const currentRefreshToken = req.body.refreshToken;
+
+    if (!currentRefreshToken) {
+      throw new BadRequestException("Refresh token requis");
+    }
+
+    const result = await SessionService.revokeOtherSessions(req.user.id, currentRefreshToken);
+
+    res.json({
+      success: true,
+      message: `${result.revokedCount} session(s) révoquée(s)`,
     });
   }
 }
