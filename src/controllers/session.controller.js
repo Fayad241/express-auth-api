@@ -6,8 +6,11 @@ export class SessionController {
   /* GET /sessions
   Lister toutes les sessions actives */
   static async getSessions(req, res) {
-    // Récupérer le refresh token actuel depuis le body ou header
-    const currentRefreshToken = req.body.refreshToken || req.query.refreshToken;
+    // Récupérer le refresh token depuis query, body ou header (dans cet ordre)
+    const currentRefreshToken = 
+      req.query.refreshToken || 
+      req.body.refreshToken || 
+      req.headers['x-refresh-token'];
 
     if (!currentRefreshToken) {
       throw new BadRequestException("Refresh token requis pour identifier la session actuelle");
@@ -18,6 +21,7 @@ export class SessionController {
     res.json({
       success: true,
       sessions: SessionDto.transform(sessions, currentRefreshToken),
+      total: sessions.length,
     });
   }
 
